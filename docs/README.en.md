@@ -2,7 +2,7 @@
 
 Embed Codex app-server behind your own UI. TypeScript, no core runtime dependencies, optional React hook, a runnable browser playground, chat streaming, cancellation, model selection, native image generation and experimental voice.
 
-This is an unofficial MIT-licensed project. Requires Node.js 22+ and Codex CLI. The npm package is **not published to the registry**; install from GitHub or a local tarball.
+This is an unofficial MIT-licensed project. Requires Node.js 22+ and Codex CLI. The npm package is **not published to the registry**; install a prebuilt GitHub Release or a local tarball.
 
 ```bash
 npm install -g @openai/codex
@@ -16,7 +16,7 @@ npm run dev
 Open the token-bearing local URL printed in the terminal. Or add to your application:
 
 ```bash
-npm install github:Atsu-Taiyo/codex-component
+npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.0/codex-component-0.1.0.tgz
 ```
 
 ```ts

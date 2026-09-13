@@ -6,7 +6,7 @@ Codex app-serverの起動、JSON-RPC、会話の継続、ストリーミング�
 
 [English quick start](docs/README.en.md) · [APIリファレンス](docs/api.md) · [組み込みガイド](docs/integration.md) · [公式資料・検証結果](docs/compatibility.md)
 
-> 非公式・MITライセンスのプロジェクトです。OpenAI製品ではありません。Node.js 22以上が必要です。npmレジストリには未公開のため、下記のGitHubインストールまたはローカルパッケージを使ってください。
+> 非公式・MITライセンスのプロジェクトです。OpenAI製品ではありません。Node.js 22以上が必要です。npmレジストリには未公開のため、下記のビルド済みReleaseまたはローカルパッケージを使ってください。
 
 ## 最短で試す
 
@@ -50,10 +50,10 @@ npm run dev
 ## 既存プロジェクトに追加
 
 ```bash
-npm install github:Atsu-Taiyo/codex-component
+npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.0/codex-component-0.1.0.tgz
 ```
 
-Git依存のインストール時にTypeScriptをビルドするため、初回は通常のnpmパッケージより時間がかかります。再現性が必要ならGitタグまたはコミットを固定してください。npmのスクリプト実行ポリシーでGit依存のビルドが止まる場合は、cloneして `npm ci` / `npm pack` を実行し、生成済みtarballをインストールしてください。
+ビルド済みのReleaseなので、利用先でのTypeScriptビルドは不要です。ソースの最新版を追う場合は `npm install github:Atsu-Taiyo/codex-component` も使えますが、npm環境によってGit依存やインストールスクリプトが禁止されている場合があります。その場合はReleaseを使ってください。
 
 ローカルで試すなら、このリポジトリで `npm pack` を実行し、利用先で `npm install /path/to/codex-component-0.1.0.tgz` を使えます。
 

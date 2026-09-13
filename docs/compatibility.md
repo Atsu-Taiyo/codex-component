@@ -24,6 +24,8 @@ codex app-server generate-ts --experimental --out /tmp/codex-protocol
 | 項目 | 結果 |
 | --- | --- |
 | TypeScriptビルド | 成功 |
+| CI (Linux/macOS/Windows) | 全19テスト・ビルド・pack検証に成功 |
+| tarballからの独立導入 | 別ディレクトリにインストールし、全公開エントリーポイントの型解決とimportに成功 |
 | 偽app-serverを実プロセスとして起動するテスト | ハンドシェイク、早着イベント、同時実行、会話分離、途中停止、タイムアウト、異常終了を検証 |
 | HTTP/ブラウザクライアント | NDJSON、分割UTF-8、認証、Origin、会話所有権、画像、SDP早着を検証 |
 | メディアAPI | fetchモックでエンドポイント、本文形式、独立したAPIキー、エラーを検証。課金APIへのライブ通信なし |
