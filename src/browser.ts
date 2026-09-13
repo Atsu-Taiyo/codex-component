@@ -93,3 +93,13 @@ export async function startVoice(client: CodexBrowser, options: {
     return { peerConnection: pc, stop };
   } catch (error) { await stop().catch(() => {}); throw error; }
 }
+
+/** Local companion connection: never send the pairing token to a remote host. */
+export function createLocalCodexBrowser(options: { token: string; baseUrl?: string }) {
+  const baseUrl = options.baseUrl ?? 'http://127.0.0.1:8787/api/ai';
+  const url = new URL(baseUrl);
+  if (!['127.0.0.1', 'localhost'].includes(url.hostname) || !['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw new CodexError('Local connection URL must point to localhost or 127.0.0.1 without credentials, query or fragment', 'INVALID_INPUT');
+  }
+  return createCodexBrowser({ token: options.token, baseUrl: url.href });
+}

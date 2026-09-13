@@ -16,7 +16,7 @@ npm run dev
 Open the token-bearing local URL printed in the terminal. Or add to your application:
 
 ```bash
-npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.1/codex-component-0.1.1.tgz
+npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.2.0/codex-component-0.2.0.tgz
 ```
 
 ```ts

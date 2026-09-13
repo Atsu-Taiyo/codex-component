@@ -28,6 +28,18 @@ npm run dev
 
 音声ファイルの文字起こし・読み上げを使う場合は、サーバーの環境変数 `OPENAI_API_KEY` を設定して起動してください。`.env.example` は設定項目の見本です。`.env` を自動ロードする場合は `npm run build` 後に `node --env-file=.env examples/web/server.mjs` で起動できます。
 
+## Sitesから各ユーザーのPCへ接続
+
+利用者は自分のPCで `codex login` 後、次のコマンドを起動します。
+
+```bash
+npx --no-install codex-component connect --origin https://YOUR-ACTUAL-SITE
+```
+
+Sites側は `LocalCodexConnect`（React接続フォーム）または `createLocalCodexBrowser` を使います。接続トークンを入力すると、その利用者自身のCodexへ接続します。
+
+[導入手順・React例・ブラウザの制約](docs/local-companion.md)。実際のSites URLからの接続は未検証です。
+
 ## できることと認証
 
 | 機能 | 簡単なAPI | 認証・条件 |
@@ -50,12 +62,12 @@ npm run dev
 ## 既存プロジェクトに追加
 
 ```bash
-npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.1/codex-component-0.1.1.tgz
+npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.2.0/codex-component-0.2.0.tgz
 ```
 
 ビルド済みのReleaseなので、利用先でのTypeScriptビルドは不要です。ソースの最新版を追う場合は `npm install github:Atsu-Taiyo/codex-component` も使えますが、npm環境によってGit依存やインストールスクリプトが禁止されている場合があります。その場合はReleaseを使ってください。
 
-ローカルで試すなら、このリポジトリで `npm pack` を実行し、利用先で `npm install /path/to/codex-component-0.1.1.tgz` を使えます。
+ローカルで試すなら、このリポジトリで `npm pack` を実行し、利用先で `npm install /path/to/codex-component-0.2.0.tgz` を使えます。
 
 ### Node.jsから直接呼ぶ
 

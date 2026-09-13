@@ -53,7 +53,7 @@ export class AppServerTransport {
     });
     child.once('close', () => lines.close());
     try {
-      await this.sendRequest('initialize', { clientInfo: { name: 'codex_component', title: 'Codex Component', version: '0.1.1' }, capabilities: { experimentalApi: this.options.experimental ?? false } });
+      await this.sendRequest('initialize', { clientInfo: { name: 'codex_component', title: 'Codex Component', version: '0.2.0' }, capabilities: { experimentalApi: this.options.experimental ?? false } });
       this.write({ method: 'initialized', params: {} });
     } catch (error) { this.close(); throw error; }
   }

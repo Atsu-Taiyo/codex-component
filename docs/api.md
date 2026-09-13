@@ -128,3 +128,7 @@ The browser counterparts return MP3 `Blob`, transcription JSON and image JSON re
 ## React
 
 `useCodexChat(client)` returns `{text, images, isRunning, error, send, stop, reset}`. `send(input, mode?)` defaults to chat; `mode:'image'` invokes native image generation. It returns the result, or `undefined` on failure/overlapping send, with error in hook state. `reset` clears the local conversation only when idle. `stop` aborts an active turn. Unmount aborts active work. Memoize the client and remount the hook when switching authenticated users.
+
+## Local companion
+
+`codex-component connect --origin https://YOUR-SITE` starts a loopback-only bridge. `startLocalBridge` is also exported from `codex-component/local`; it returns `{baseUrl, token, origins, close}`. `createLocalCodexBrowser` from `/browser` validates a loopback-only connection URL. `LocalCodexConnect` from `/react` renders a token/URL form and calls `onConnected(client)` after a successful login-status check. See [local companion guide](local-companion.md) for setup and browser restrictions.
