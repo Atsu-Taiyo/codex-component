@@ -34,7 +34,7 @@ codex app-server generate-ts --experimental --out /tmp/codex-protocol
 | 実チャット | `CODEX_COMPONENT_OK` の回答を受信 |
 | 実画像生成 | ネイティブ画像生成でPNGを1枚受信。ローカル保存して目視確認 |
 | 実音声候補 | v1/v2候補と既定の声を取得 |
-| Realtime開始（ChatGPT認証） | `realtime conversation requires API key auth` を受信 |
+| 直接WebSocket Realtime開始（ChatGPT認証） | `realtime conversation requires API key auth` を受信 |
 | Realtime実通話・マイク往復 | 未検証 |
 | APIキー使用のSTT/TTS/Images実生成 | 未検証 |
 | Windows/Linuxの実Codex | 未検証。CIのプロトコルテストとは別 |
@@ -50,3 +50,9 @@ codex app-server generate-ts --experimental --out /tmp/codex-protocol
 5. この表に実際の結果とバージョンを記録する。
 
 モデル名を固定の万能一覧にせず、Codexの `model/list` から選んでください。画像生成ツールやRealtimeが利用できるかは、モデル一覧の取得成功だけでは判断できません。
+
+## WebRTC認証とAVASの訂正
+
+WebSocketのAPIキー要件をWebRTCへ適用した初版の説明は誤りでした。公式Codexソースの `prepare_realtime_start` は接続方式で認証処理を分岐します。WebRTCの既定v1はquicksilver=v1を送る一方、現在のAVASはquicksilver=v2を要求します。プロトコルv3（FramelessBidi）がこのヘッダーに対応するため、WebRTCの既定をv3に修正しました。プロトコルv2を指定する修正ではありません。
+
+修正後のCLI実接続では、APIキーを追加せずにヘッダーエラーを通過し、テスト用の音声セクションなしSDPに対する `invalid_offer` まで進むことを確認しました。これはマイク・音声往復の検証ではありません。

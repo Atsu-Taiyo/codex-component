@@ -65,17 +65,11 @@ macOSのGUI起動ではPATHがターミナルと異なることがあります�
 2つの方式があります。
 
 1. **音声ファイル→文字起こし→Codex→読み上げ**: `createOpenAIMedia` と `createCodex` を組み合わせる。CodexのChatGPTログインをそのまま使い、音声だけ別APIキーで処理できます。APIアダプターのキーはサーバー側に置きます。
-2. **Codex Realtime**: `experimental:true` と `voice` API/WebRTCヘルパーを使う。CLIの実装と認証に依存します。0.154.0でChatGPT認証の開始を試すとAPIキー認証必須エラーでした。
+2. **Codex Realtime / WebRTC**: `experimental:true` とブラウザの `startVoice()` を使う。CodexのChatGPT認証を使用し、別途APIキーを必要としません。対応アカウント・ランタイムの利用可否は別途確認してください。
 
-RealtimeをAPI認証で試す場合は、普段のログインを置き換えず、別ホームを作ります。次はmacOS/Linuxの例です。
+直接WebSocketの `ai.voice.start(threadId)` は別経路であり、検証したCLIではAPIキーを要求しました。初版ではこの結果を音声全体に一般化していましたが、WebRTCには当てはまりません。
 
-```bash
-mkdir -p .codex-component/api-home
-printf '%s' "$OPENAI_API_KEY" | CODEX_HOME="$PWD/.codex-component/api-home" codex login --with-api-key
-CODEX_COMPONENT_HOME="$PWD/.codex-component/api-home" npm run dev
-```
-
-この例は認証設定の手順であり、このリポジトリで実通話まで検証済みという意味ではありません。Realtimeモデルのアカウント権限、ネットワーク、ブラウザ再生制約も確認してください。音声の開始RPC成功だけでUIを「通話中」に確定させず、接続イベントと音声を確認します。
+WebRTCは `version: "v3"` を既定として送ります。これによりCodex内部の `OpenAI-Alpha: quicksilver=v2` ヘッダーが選択されます。未指定の古い既定v1では `invalid_quicksilver_alpha_header` が発生します。HTTPの認証ヘッダーをブラウザから偽装する必要はありません。
 
 WebRTCヘルパーはマイクを取得するため、ボタン操作から開始してください。終了・画面遷移で `session.stop()` を呼びます。NodeでPCMを送る場合は音声フレームの形式を利用ランタイムに合わせてください。音声ファイルをbase64化して `appendAudio` へ送るだけでは通常動作しません。
 

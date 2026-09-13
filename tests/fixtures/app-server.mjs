@@ -26,7 +26,7 @@ lines.on('line', line => {
     result({}); event('turn/completed', { threadId: m.params.threadId, turn: { id: 'turn-1', status: 'interrupted' } }); return;
   }
   if (m.method === 'thread/realtime/listVoices') { result({ voices: { v1: ['alloy'], v2: ['marin'], defaultV1: 'alloy', defaultV2: 'marin' } }); return; }
-  if (m.method === 'thread/realtime/start') { event('thread/realtime/sdp', { threadId: m.params.threadId, sdp: 'answer-sdp' }); result({}); return; }
+  if (m.method === 'thread/realtime/start') { if (m.params.transport?.type === 'webrtc' && m.params.version !== 'v3') { send({id:m.id,error:{code:-32602,message:'AVAS requires OpenAI-Alpha: quicksilver=v2.'}}); return; } event('thread/realtime/sdp', { threadId: m.params.threadId, sdp: 'answer-sdp' }); result({}); return; }
   if (m.method.startsWith('thread/realtime/')) { result({}); return; }
   if (m.method !== 'turn/start') { send({ id: m.id, error: { code: -32601, message: 'Unknown' } }); return; }
   const threadId = m.params.threadId, turnId = 'turn-1', prompt = m.params.input[0].text;

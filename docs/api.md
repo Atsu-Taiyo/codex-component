@@ -82,7 +82,7 @@ There is no automatic login URL opening or logout. `account/login/completed` not
 `experimental: true` is required. The payload subset follows generated CLI 0.154.0 types; availability is checked by actually starting a session, not inferred from a voice list.
 
 - `voice.list()` returns `{voices:{v1, v2, defaultV1, defaultV2}}`.
-- `voice.start(threadId, {model?, voice?, prompt?, version?, outputModality?, transport?})` uses `thread/realtime/start`. Output defaults to `audio`; transport defaults to `{type:'websocket'}`.
+- `voice.start(threadId, {model?, voice?, prompt?, version?, outputModality?, transport?})` uses `thread/realtime/start`. Output defaults to `audio`; transport defaults to `{type:'websocket'}` (API-key path). WebRTC defaults to `version:'v3'`, which selects the `OpenAI-Alpha: quicksilver=v2` header and supports Codex ChatGPT authentication. Protocol `v2` is not the same as the quicksilver header's v2.
 - `voice.appendAudio(threadId, audio)` accepts `{data, sampleRate, numChannels, samplesPerChannel, itemId}`. `data` is base64 audio bytes. Match the actual runtime's audio encoding; a WebM/MP3 file is **not** a raw audio chunk. Prefer the WebRTC helper to avoid codec/frame handling.
 - `voice.appendText(threadId, text)` appends text with role `user`.
 - `voice.stop(threadId)` stops the native realtime session.

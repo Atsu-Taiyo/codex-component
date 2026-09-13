@@ -38,24 +38,24 @@ npm run dev
 | 画像入力 | `images: [dataUrl]` | 選択モデルの画像入力対応 |
 | Codexネイティブ画像生成・編集 | `ai.images.generate()` | Codex側の機能・アカウントの利用可否に依存 |
 | 音声候補一覧 | `ai.voice.list()` | `experimental: true` |
-| Codex音声会話 | `ai.voice.start()` / `startVoice()` | 実験的。検証したCLIではAPIキー認証が必要 |
+| Codex音声会話 | `ai.voice.start()` / `startVoice()` | 実験的。WebRTCはChatGPT認証、直接WebSocketはAPIキーが必要 |
 | 音声ファイル→文字 | `media.transcribe()` | 別途OpenAI APIキー・API課金 |
 | 文字→音声 | `media.speech()` | 別途OpenAI APIキー・API課金 |
 | 画像モデルを直接選んで生成 | `media.images()` | 別途OpenAI APIキー・API課金 |
 
 **Codexのチャットモデルと画像・音声モデルは別です。** `ai.models.list()` はCodexモデルの一覧です。ネイティブ画像生成の `model` は指示を解釈するCodexモデルを選びます。画像モデルそのものを指定したい場合は `media.images({ model: ... })` を使います。
 
-**実機検証（2026-09-13 / macOS / Codex CLI 0.154.0）:** チャット・モデル一覧・ネイティブ画像生成・音声候補一覧は成功。ChatGPTログインでのRealtime開始は `realtime conversation requires API key auth` になりました。音声候補が取得できても音声会話の利用を保証しません。マイクからの実通話とAPIキーを使うメディア生成は未検証です。
+**実機検証（2026-09-13 / macOS / Codex CLI 0.154.0）:** チャット・モデル一覧・ネイティブ画像生成・音声候補一覧は成功。ChatGPTログインでの直接WebSocket開始は `realtime conversation requires API key auth` になりました。これはWebRTCの要件ではありません。WebRTCはChatGPT認証を使い、`version: "v3"` を指定します。音声候補が取得できても音声会話の利用を保証しません。マイクからの実通話とAPIキーを使うメディア生成は未検証です。
 
 ## 既存プロジェクトに追加
 
 ```bash
-npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.0/codex-component-0.1.0.tgz
+npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.1/codex-component-0.1.1.tgz
 ```
 
 ビルド済みのReleaseなので、利用先でのTypeScriptビルドは不要です。ソースの最新版を追う場合は `npm install github:Atsu-Taiyo/codex-component` も使えますが、npm環境によってGit依存やインストールスクリプトが禁止されている場合があります。その場合はReleaseを使ってください。
 
-ローカルで試すなら、このリポジトリで `npm pack` を実行し、利用先で `npm install /path/to/codex-component-0.1.0.tgz` を使えます。
+ローカルで試すなら、このリポジトリで `npm pack` を実行し、利用先で `npm install /path/to/codex-component-0.1.1.tgz` を使えます。
 
 ### Node.jsから直接呼ぶ
 
@@ -213,7 +213,7 @@ const session = await startVoice(client, {
 await session.stop();
 ```
 
-音声会話用のCodex認証と、`media` アダプターの `OPENAI_API_KEY` は独立です。環境変数を設定するだけで、ChatGPT認証中のCodexがAPI認証へ切り替わるとは限りません。分離したCodexホームでのAPI認証と、実験的APIの注意点は [組み込みガイド](docs/integration.md#音声の認証とライフサイクル) を確認してください。
+WebRTC音声会話はCodexのChatGPT認証を使い、`media` アダプターの `OPENAI_API_KEY` は不要です。直接WebSocket接続は別経路でAPIキーを要求します。接続方式と実験的APIの注意点は [組み込みガイド](docs/integration.md#音声の認証とライフサイクル) を確認してください。
 
 ## 構成
 
@@ -251,7 +251,8 @@ ai-math-editorの「ホスト側のCodexを独自UIで包む」構成を参考�
 | `401` | 起動ログのトークン付きURLを使う。サーバー再起動で自動トークンは変わる |
 | `Origin denied` | `allowedOrigins` をUIの正確なorigin（ポートを含む）に合わせる |
 | `IMAGE_UNAVAILABLE` | Codexの画像生成可否を確認。画像モデル指定は `media.images` を使用 |
-| `realtime conversation requires API key auth` | 現CLIのRealtime認証制約。API認証の分離ホーム、またはAPI音声アダプターを利用 |
+| `realtime conversation requires API key auth` | 直接WebSocketの制約。ブラウザではWebRTCの `startVoice()` を利用 |
+| `invalid_quicksilver_alpha_header` | WebRTCは `version: "v3"` が必要（quicksilver=v2ヘッダーに対応）。修正版に更新 |
 | `API_KEY_REQUIRED` | サーバー側にmediaアダプターを設定。キーをフロントへ入れない |
 | `THREAD_BUSY` | 同じ会話の完了/停止を待つ。独立処理には別会話を使用 |
 | `TURN_TIMEOUT` / `CLOSED` | タイムアウトを調整。`CLOSED` 後はクライアントを作り直す |

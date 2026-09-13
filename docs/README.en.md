@@ -16,7 +16,7 @@ npm run dev
 Open the token-bearing local URL printed in the terminal. Or add to your application:
 
 ```bash
-npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.0/codex-component-0.1.0.tgz
+npm install https://github.com/Atsu-Taiyo/codex-component/releases/download/v0.1.1/codex-component-0.1.1.tgz
 ```
 
 ```ts
@@ -32,7 +32,7 @@ Entrypoints: core (`codex-component`), Node HTTP (`/server`), browser (`/browser
 
 The native path uses Codex's own authentication and account capabilities. The media adapter requires a separate OpenAI API key and incurs API billing. Codex chat model selection is separate from choosing an image or speech model.
 
-**Verified on macOS with CLI 0.154.0:** chat, model discovery, native PNG generation and voice discovery. Starting realtime with ChatGPT auth returned `realtime conversation requires API key auth`. End-to-end microphone calls and live API media requests are not verified. Voice is explicitly experimental; there is no silent billing fallback.
+**Verified on macOS with CLI 0.154.0:** chat, model discovery, native PNG generation and voice discovery. Starting direct WebSocket realtime (not WebRTC) with ChatGPT auth returned `realtime conversation requires API key auth`. End-to-end microphone calls and live API media requests are not verified. WebRTC uses ChatGPT authentication and defaults to protocol v3 (quicksilver=v2 header); no separate API key is required for that path. Voice is explicitly experimental; there is no silent billing fallback.
 
 The bundled HTTP handler is a **single-user local bridge**. Public services need their own authentication, per-user runtime/storage isolation and quotas. Its read-only sandbox still permits reading files and may inherit configured MCP/plugin behavior. Browser code never receives Codex credentials or an OpenAI API key.
 

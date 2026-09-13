@@ -151,7 +151,7 @@ export class Codex {
     list: (): Promise<Voices> => { this.requireExperimental(); return this.transport.request('thread/realtime/listVoices'); },
     start: (threadId: string, options: VoiceOptions = {}) => {
       this.requireExperimental();
-      return this.transport.request('thread/realtime/start', { ...options, threadId, outputModality: options.outputModality ?? 'audio', transport: options.transport ?? { type: 'websocket' } });
+      return this.transport.request('thread/realtime/start', { ...options, threadId, version: options.version ?? (options.transport?.type === 'webrtc' ? 'v3' : undefined), outputModality: options.outputModality ?? 'audio', transport: options.transport ?? { type: 'websocket' } });
     },
     appendAudio: (threadId: string, audio: AudioChunk) => { this.requireExperimental(); return this.transport.request('thread/realtime/appendAudio', { threadId, audio }); },
     appendText: (threadId: string, text: string) => { this.requireExperimental(); return this.transport.request('thread/realtime/appendText', { threadId, text, role: 'user' }); },
