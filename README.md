@@ -287,3 +287,13 @@ CODEX_LIVE_CHAT=1 npm run smoke  # 実際のチャットを1回実行。利用�
 ## ライセンス
 
 MIT。Codex自体の配布・利用条件はCodexの公式資料を参照してください。
+
+## Unityから使う
+
+Unity Package Manager用パッケージを追加しました。チャット・モデル一覧・画像生成・キャンセルをC#から呼べます。Web版はブラウザ経由で各プレイヤーのPC上のCodexへ接続します。
+
+```text
+https://github.com/Atsu-Taiyo/codex-component.git?path=/unity/com.atsutaiyo.codex-component#unity-v0.1.0
+```
+
+導入・C#サンプル・接続手順は **[Unityガイド](docs/unity.md)** を参照してください。Unityの音声APIは未実装です。Editorでのコンパイルと通信処理の自動テストは確認済みですが、WebGLビルドとSites公開ページでの接続は未検証です。
