@@ -17,7 +17,7 @@ export function siteOrigin(value: string): string {
 
 /** One user's loopback-only bridge. The token is scoped to this process and these origins. */
 export async function startLocalBridge(options: {
-  origins: string[]; port?: number; workspace?: string; bin?: string; codexHome?: string;
+  origins: string[]; browserLogin?: boolean; port?: number; workspace?: string; bin?: string; codexHome?: string;
   /** Inject an already configured client, e.g. in tests. Closed together with the bridge. */
   codex?: Codex;
 }) {
@@ -30,11 +30,48 @@ export async function startLocalBridge(options: {
   const codex = options.codex ?? createCodex({ workspace, bin: options.bin, codexHome: options.codexHome, experimental: true });
   const token = randomBytes(32).toString('hex');
   const handler = createCodexHandler({ codex, token, allowedOrigins: origins });
+  let login: ReturnType<Codex['account']['login']> | undefined;
   const server = createServer((req, res) => {
     const address = server.address();
     const actualPort = address && typeof address !== 'string' ? address.port : port;
     if (![ `127.0.0.1:${actualPort}`, `localhost:${actualPort}` ].includes(req.headers.host ?? '')) {
       res.writeHead(403); res.end('Host denied'); return;
+    }
+    if (options.browserLogin && req.url?.startsWith('/api/ai/auth/')) {
+      const origin = req.headers.origin;
+      if (!origin || !origins.includes(origin)) { res.writeHead(403); res.end('Origin denied'); return; }
+      res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin');
+      res.setHeader('Cache-Control', 'no-store');
+      if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        if (req.headers['access-control-request-private-network'] === 'true') res.setHeader('Access-Control-Allow-Private-Network', 'true');
+        res.writeHead(204); res.end(); return;
+      }
+      if (req.method !== 'POST' || !req.headers['content-type']?.startsWith('application/json')) { res.writeHead(405); res.end(); return; }
+      req.resume();
+      const send = (code: number, body: unknown) => { res.writeHead(code, {'Content-Type':'application/json'}); res.end(JSON.stringify(body)); };
+      void (async () => {
+        if (req.url === '/api/ai/auth/session') {
+          const account = await codex.account.read();
+          if (account.account?.type !== 'chatgpt') { send(200, {loggedIn:false}); return; }
+          login = undefined;
+          send(200, {loggedIn:true, token, baseUrl:`http://127.0.0.1:${actualPort}/api/ai`}); return;
+        }
+        if (req.url === '/api/ai/auth/login') {
+          login ??= codex.account.login().catch(error => { login = undefined; throw error; });
+          const result = await login;
+          send(200, {authUrl:result.authUrl}); return;
+        }
+        if (req.url === '/api/ai/auth/cancel') {
+          const pending = login; login = undefined;
+          const result = await pending;
+          if (result?.loginId) await codex.account.cancelLogin(result.loginId);
+          send(200, {}); return;
+        }
+        send(404, {error:'Not found'});
+      })().catch(error => send(500, {error:error instanceof Error ? error.message : 'Login failed'}));
+      return;
     }
     void handler(req, res).catch(() => { if (!res.headersSent) res.writeHead(500); res.end(); });
   });

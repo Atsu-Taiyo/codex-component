@@ -301,3 +301,5 @@ https://github.com/Atsu-Taiyo/codex-component.git?path=/unity/com.atsutaiyo.code
 ## 小さなUnityゲームで試す
 
 **[ことばの宝箱](examples/treasure-unity/README.md)** — お題に合う宝物を考え、AIが判定・画像生成。3つ集めたらクリアです。Voiceで案内役に相談でき、AI接続なしの練習モードもあります。
+
+ブラウザでその場でログインしたい場合は **[ChatGPTログインの組み込み](docs/login.md)** を使ってください。トークンのコピー・貼り付けは不要です。

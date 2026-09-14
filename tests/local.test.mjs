@@ -31,3 +31,20 @@ test('browser local helper rejects remote token destinations before any request'
   }
   assert.ok(createLocalCodexBrowser({token:'local-secret'}));
 });
+
+test('browser login is opt-in, origin-bound, and only pairs authenticated users', async t => {
+  let loggedIn=false, starts=0;
+  const codex={close(){},account:{read:async()=>({account:loggedIn?{type:'chatgpt'}:null}),login:async()=>{starts++;return{authUrl:'https://auth.openai.com/test',loginId:'login1'};},cancelLogin:async()=>{}}};
+  const bridge=await startLocalBridge({origins:['https://trusted.example'],port:0,workspace:process.cwd(),codex,browserLogin:true});
+  t.after(()=>bridge.close());
+  const post=(route,origin='https://trusted.example')=>fetch(bridge.baseUrl+'/auth/'+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'});
+  assert.equal((await post('session','https://evil.example')).status,403);
+  assert.equal((await post('session','')).status,403);
+  assert.equal((await fetch(bridge.baseUrl+'/auth/session',{headers:{Origin:'https://trusted.example'}})).status,405);
+  assert.deepEqual(await (await post('session')).json(),{loggedIn:false});
+  assert.equal((await (await post('login')).json()).authUrl,'https://auth.openai.com/test');
+  await post('login');assert.equal(starts,1);
+  loggedIn=true;
+  const session=await (await post('session')).json();assert.equal(session.loggedIn,true);assert.equal(session.token,bridge.token);
+  assert.equal(session.baseUrl,bridge.baseUrl);
+});

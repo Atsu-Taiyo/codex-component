@@ -13,13 +13,12 @@ Webビルド済みの場合、リポジトリのルートで:
 
 ```sh
 npm ci
-codex login
 node examples/treasure-unity/serve.mjs --open
 ```
 
 `Launch.command` のダブルクリックでも起動できます。ブラウザのゲームとローカル接続プロセスをまとめて起動します。既定ポートはゲーム **8792**、Codex接続 **8791**。他のデモを停止する必要はありません。終了はターミナルでCtrl+C。
 
-`--open` は一時トークンをURLのフラグメントで渡し、ページ起動時にURLから消します。保存・ログ送信はしません。手動で開く場合はターミナルのトークンをゲームへ貼り付けて「接続」。画面の接続先も変更できます。
+ゲームの **「ChatGPTでログイン」** を押してください。未ログインなら公式ログイン画面が開き、完了すると自動でゲームにつながります。すでにローカルCodexへChatGPTでログイン済みなら、そのログイン状態を使います。APIキーや接続トークンの入力は不要です。ローカル接続の認証情報は内部でのみ扱い、URL・画面・ログへ出しません。PC側の接続プロセスは引き続き必要です。
 
 ```sh
 # Codex未導入でも、練習モードの画面だけ起動する
@@ -28,7 +27,7 @@ node examples/treasure-unity/serve.mjs --practice --open
 
 ## 遊び方
 
-1. 接続するか「まず練習する」を選びます。
+1. 「ChatGPTでログイン」か「練習する」を選びます。
 2. お題に合う宝物を入力して「この宝物をつくる」。
 3. 合格すると宝箱に画像が入ります。3つ集めるとクリア。
 
@@ -51,14 +50,14 @@ macOSでの再現コマンド（Unityの配置が異なる場合は先頭のパ�
   -executeMethod TreasureBuild.Web -logFile /tmp/treasure-build.log
 ```
 
-出力は `Build/Web`。ビルド成果物・Library・トークンはGitへ含めません。`TreasureBuild.Setup` はこのサンプルのシーンを再生成します。手動編集したシーンを残す場合は別名で保存してください。
+出力は `Build/Web`。ビルド成果物・Library・認証情報はGitへ含めません。`TreasureBuild.Setup` はこのサンプルのシーンを再生成します。手動編集したシーンを残す場合は別名で保存してください。
 
 ## 構成・検証
 
 - `Assets/TreasureGame.cs`：UI、ゲーム進行、Codex呼び出し。
 - `Assets/Editor/TreasureBuild.cs`：シーン作成、Webビルド、ルール検証。
 - `serve.mjs`：静的ゲーム配信と各プレイヤーのローカルCodex接続。
-- `web/index.html`：Unity読み込み画面と一時接続情報の受け渡し。
+- `web/index.html`：Unity読み込み画面とChatGPTログインと内部接続処理。
 
 検証済み：Unity Webビルド、ブラウザでの練習モード、実Codexによる判定 → 画像生成 → Unityカード表示（星のランプ）。Voiceの実マイク往復とSites公開は未検証です。
 

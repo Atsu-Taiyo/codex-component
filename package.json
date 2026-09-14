@@ -1,6 +1,6 @@
 {
   "name": "codex-component",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Embed Codex app-server in your own UI: chat, models, images and experimental voice.",
   "type": "module",
   "license": "MIT",

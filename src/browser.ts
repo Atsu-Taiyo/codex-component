@@ -103,3 +103,52 @@ export function createLocalCodexBrowser(options: { token: string; baseUrl?: stri
   }
   return createCodexBrowser({ token: options.token, baseUrl: url.href });
 }
+
+/** Call directly from a click. Requires the companion's opt-in browserLogin mode. */
+export async function loginLocalCodex(options: {baseUrl?: string; signal?: AbortSignal; onStatus?: (message: string) => void} = {}) {
+  const baseUrl = (options.baseUrl ?? 'http://127.0.0.1:8787/api/ai').replace(/\/$/, '');
+  createLocalCodexBrowser({baseUrl, token:'validation-only'});
+  options.signal?.throwIfAborted();
+  const popup = window.open('', '_blank');
+  if (popup) popup.opener = null;
+  let started = false;
+  const request = async (route: string, signal = options.signal) => {
+    const response = await fetch(baseUrl + '/auth/' + route, {method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:'{}',signal:signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000)});
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error ?? `Login HTTP ${response.status}`);
+    return data;
+  };
+  const paired = (value: any) => {
+    if (!value.loggedIn) return undefined;
+    if (typeof value.token !== 'string' || !value.token) throw new Error('Missing local session');
+    // Keep the validated destination, not a URL supplied in the response.
+    return {baseUrl, token:value.token as string};
+  };
+  try {
+    options.onStatus?.('ログイン状態を確認しています…');
+    let result = paired(await request('session'));
+    if (result) return result;
+    if (!popup) throw new Error('ログイン画面を開くため、ポップアップを許可してもう一度押してください。');
+    const login = await request('login'); started = true;
+    const authUrl = new URL(login.authUrl);
+    if (authUrl.protocol !== 'https:' || !['auth.openai.com','auth0.openai.com','chatgpt.com'].includes(authUrl.hostname)) throw new Error('Unexpected login destination');
+    popup.location.href = authUrl.href;
+    options.onStatus?.('開いたChatGPT画面でログインしてください。');
+    const deadline = Date.now() + 180_000;
+    while (Date.now() < deadline) {
+      options.signal?.throwIfAborted();
+      result = paired(await request('session'));
+      if (result) return result;
+      if (popup.closed) throw new Error('ログイン画面が閉じられました。もう一度押してください。');
+      await new Promise<void>((resolve, reject) => {
+        const abort = () => { clearTimeout(timer); reject(options.signal?.reason ?? new Error('Cancelled')); };
+        const timer = setTimeout(() => { options.signal?.removeEventListener('abort', abort); resolve(); },1000);
+        options.signal?.addEventListener('abort',abort,{once:true});
+      });
+    }
+    throw new Error('ログインがタイムアウトしました。もう一度押してください。');
+  } catch (error) {
+    if (started) await request('cancel', AbortSignal.timeout(5000)).catch(() => {});
+    throw error;
+  } finally { popup?.close(); }
+}

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CodexComponent;
@@ -17,7 +18,8 @@ public sealed class TreasureGame : MonoBehaviour {
     CodexClient ai, voice;
     Font font;
     Transform root;
-    InputField token, idea, endpoint;
+    InputField idea;
+    string sessionToken, sessionEndpoint;
     Text status, quest, progress, voiceStatus, mode;
     Button submit, cancel, startVoice, stopVoice;
     readonly List<Texture2D> textures = new List<Texture2D>();
@@ -48,12 +50,11 @@ public sealed class TreasureGame : MonoBehaviour {
         Label(root,"想像したものが、あなただけの宝物になる。",50,132,700,32,18,muted);
         mode=Label(root,"まだ接続していません",950,78,280,40,15,purple);
         var connect=Panel("Connect",root,48,186,1184,82,Color.white);
-        Label(connect,"自分のCodexにつなぐ",18,10,250,24,15,ink);
-        endpoint=Input(connect,"接続先",18,38,252,32);endpoint.text="http://127.0.0.1:8791/api/ai";
-        token=Input(connect,"トークンを貼り付け",282,38,301,32);token.contentType=InputField.ContentType.Password;
-        ButtonAt(connect,"接続",597,24,140,42,purple,()=>Connect());
-        ButtonAt(connect,"まず練習する",753,24,185,42,Hex("ECE6FA"),()=>BeginPractice(),ink);
-        ButtonAt(connect,"はじめから",952,24,208,42,Hex("ECE6FA"),()=>ResetGame(),ink);
+        Label(connect,"あなたのChatGPTで遊ぶ",18,12,480,28,18,ink);
+        Label(connect,"未ログインならログイン画面が開きます。",18,45,570,24,14,muted);
+        ButtonAt(connect,"ChatGPTでログイン",597,24,240,42,purple,()=>Login());
+        ButtonAt(connect,"練習する",853,24,145,42,Hex("ECE6FA"),()=>BeginPractice(),ink);
+        ButtonAt(connect,"はじめから",1012,24,148,42,Hex("ECE6FA"),()=>ResetGame(),ink);
         var left=Panel("Quest",root,48,290,440,450,Color.white);
         progress=Label(left,"宝物  0 / 3",24,22,380,26,16,purple);
         Label(left,"今回のお題",24,66,380,28,14,muted);
@@ -84,10 +85,22 @@ public sealed class TreasureGame : MonoBehaviour {
     Button ButtonAt(Transform parent,string text,float x,float y,float w,float h,Color color,Action action,Color? foreground=null) { var p=Panel(text,parent,x,y,w,h,color);var button=p.gameObject.AddComponent<Button>();button.targetGraphic=p.GetComponent<Image>();button.onClick.AddListener(()=>action());var t=Label(p,text,4,0,w-8,h,16,foreground??Color.white);t.alignment=TextAnchor.MiddleCenter;return button; }
     void Refresh() { if(submit==null)return;progress.text="宝物  "+Score+" / 3";quest.text=Score==3?"宝箱、完成！\nまた冒険しよう。":quests[Score];submit.interactable=Connected&&!Busy&&!voicing&&!voiceStarting&&Score<3;cancel.interactable=Busy;startVoice.interactable=Connected&&!Practice&&!Busy&&!voicing&&!voiceStarting&&CodexClient.VoiceSupported;stopVoice.interactable=voicing||voiceStarting;idea.interactable=!Busy&&Score<3; }
     [Serializable] class Pairing { public string token; public string baseUrl; }
-    public void ConnectFromPage(string json) { var p=JsonUtility.FromJson<Pairing>(json);token.text=p.token;endpoint.text=p.baseUrl;Connect(); }
+    public void ConnectFromPage(string json) { var p=JsonUtility.FromJson<Pairing>(json);sessionToken=p.token;sessionEndpoint=p.baseUrl;Connect(); }
+#if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")] static extern void Treasure_Login();
+#endif
+    public void LoginStatus(string message) { status.text=message; }
+    void Login() {
+        if(Busy||voicing||voiceStarting)return;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        Treasure_Login();
+#else
+        status.text="ChatGPTログインはWeb版で使えます。Editorでは練習モードをどうぞ。";
+#endif
+    }
     async void Connect() {
         if(Busy||voicing||voiceStarting) {status.text="先に生成や音声を停止してね。";return;}
-        try { ai.Configure(token.text,endpoint.text);voice.Configure(token.text,endpoint.text);Busy=true;Refresh();status.text="接続を確認しています…";var s=await ai.StatusAsync();if(!s.loggedIn)throw new Exception("PCで codex login を実行してください。");Connected=true;Practice=false;mode.text="● 自分のCodexに接続中";status.text="準備できたよ。宝物を考えてみよう！";token.text=""; }
+        try { ai.Configure(sessionToken,sessionEndpoint);voice.Configure(sessionToken,sessionEndpoint);Busy=true;Refresh();status.text="接続を確認しています…";var s=await ai.StatusAsync();if(!s.loggedIn)throw new Exception("PCで codex login を実行してください。");Connected=true;Practice=false;mode.text="● 自分のCodexに接続中";status.text="準備できたよ。宝物を考えてみよう！";sessionToken=""; }
         catch(Exception e){Connected=false;status.text=e.Message;}finally{Busy=false;Refresh();}
     }
     public void BeginPractice() { if(Busy||voicing||voiceStarting)return;ResetGame();Practice=true;Connected=true;mode.text="練習モード / AI未使用";status.text="例の宝物で試そう。画像は練習用の絵です。";Refresh(); }
