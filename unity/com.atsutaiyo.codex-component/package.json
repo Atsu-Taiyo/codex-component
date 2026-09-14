@@ -1,6 +1,6 @@
 {
   "name": "com.atsutaiyo.codex-component",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Codex Component",
   "description": "Connect Unity games to the player's local Codex companion.",
   "unity": "2022.3",
@@ -13,6 +13,11 @@
       "displayName": "Chat example",
       "description": "Minimal runtime chat integration",
       "path": "Samples~/Chat"
+    },
+    {
+      "displayName": "Voice example",
+      "description": "Web microphone conversation with start/stop buttons",
+      "path": "Samples~/Voice"
     }
   ],
   "dependencies": {

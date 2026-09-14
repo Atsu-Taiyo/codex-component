@@ -2,7 +2,7 @@
 
 Unity Package Managerから導入し、C#の `ChatAsync` / `GenerateImageAsync` / `ModelsAsync` を呼べます。各プレイヤーは自分のPCでCodexにログインし、ローカル接続用プロセスを起動します。ゲームにAPIキーを埋め込む必要はありません。Web版は `.jslib` を同梱しており、独自Webテンプレートへの追記は不要です。
 
-対応範囲はチャット・モデル選択・画像入出力・キャンセルです。Unityの音声APIは未実装です。Sitesの公開ページからの接続にはブラウザのローカルネットワーク許可などが必要で、実機確認は未完了です。以下に導入手順・API例・制約をまとめています。
+対応範囲はチャット・モデル選択・画像入出力・キャンセルです。Unity Web版は実験的な音声APIにも対応します。Sitesの公開ページからの接続にはブラウザのローカルネットワーク許可などが必要で、実機確認は未完了です。以下に導入手順・API例・制約をまとめています。
 
 Unity Package Manager package: **com.atsutaiyo.codex-component**. Includes a C# client, a self-contained Web `.jslib` transport, and an importable chat example. No npm bundling or custom Web template is needed for the game.
 
@@ -18,7 +18,7 @@ Each player installs and signs into Codex on their own PC. Hosting the game alon
 In Unity: Window → Package Manager → + → Install package from Git URL:
 
 ```text
-https://github.com/Atsu-Taiyo/codex-component.git?path=/unity/com.atsutaiyo.codex-component#unity-v0.1.0
+https://github.com/Atsu-Taiyo/codex-component.git?path=/unity/com.atsutaiyo.codex-component#unity-v0.2.0
 ```
 
 Requires Git and Unity 2022.3 or later (Editor compilation verified on Unity 6000.4.9f1; see verification below). Import **Chat example** from the package's Samples tab if desired.
@@ -93,7 +93,32 @@ var texture = result.images[0].ToTexture();
 
 ## Voice
 
-The Unity C# package currently covers chat, model selection, image input/output and cancellation. **Microphone capture and realtime playback are not yet exposed as Unity methods.** The kit's browser `startVoice` helper remains available for a custom page integration; it uses WebRTC with ChatGPT authentication and is experimental. Do not treat the optional API-key-based media adapter as required for native Codex voice. See [API](api.md) and [compatibility](compatibility.md).
+Unity Web版では `StartVoiceAsync()` / `StopVoiceAsync()` でマイク音声を送受信できます。ChatGPT認証のローカル接続を使い、ゲームへOpenAI APIキーを埋め込む必要はありません。Codex側のRealtimeは実験的機能です。通常のチャットモデルが音声にも対応するとは限らないため、最初は `model` と `voice` を省略してください。
+
+```csharp
+// Configure(token) first. Subscribe once, e.g. in Start().
+client.VoiceEvent += json => UnityEngine.Debug.Log(json);
+
+// Call directly from a button handler (do not auto-start on scene load).
+var session = await client.StartVoiceAsync(new VoiceOptions {
+    prompt = "あなたはゲームの村人です。日本語で短く会話してください。"
+});
+// Optional: pass session.threadId next time to reuse the same conversation.
+await client.StopVoiceAsync(); // wire this to a separate Stop button
+```
+
+The example above shows two separate button actions; don't immediately stop after start in your real handler. Import **Voice example** from Package Manager Samples for separate `BeginVoice` and `EndVoice` handlers. `VoiceSupported` indicates a Web build, not microphone permission/account availability. Catch exceptions and display their messages to the player.
+
+- Start creates a conversation automatically unless `VoiceOptions.threadId` is supplied. Options also accept `model`, `voice`, and `prompt`.
+- The start task completes after SDP negotiation, **not after audible speech**. Observe `VoiceEvent` raw JSON for `ready`, `connection-state`, transcript/provider events and `playback-blocked`.
+- A browser audio control appears outside the Unity canvas for output. If autoplay is blocked, the player can press Play there. Audio is browser-managed, not routed into a Unity AudioSource/mixer or spatial audio.
+- Stop, `CancelAll()`, component disable and destruction release the microphone, peer connection and playback. Explicit stop awaits the remote stop request; cleanup on destruction is best-effort. A failed remote stop does not keep the local microphone open.
+- Each CodexClient supports one voice session. Stop and await completion before starting another. Do not run a chat turn on the same thread while voice is active.
+- Editor/native desktop calls to StartVoiceAsync throw PlatformNotSupportedException; use a Unity Web build for microphone testing.
+- HTTPS (or localhost), microphone permission, WebRTC network access and the local connection permissions described above are required. An embedded game may need the host to delegate `microphone` and local-network access permissions. The package cannot override host/browser restrictions.
+
+**Validation:** mocked WebRTC tests cover SDP success, microphone rejection, failed negotiation, stopping during a permission prompt, blocked playback, failed connections and duplicate starts. Editor and voice sample compilation pass on Unity 6000.4.9f1. The Web-specific C# branch also compiles using the installed Unity compiler (this is not a WebGL linker/build test). Actual microphone → Codex → audible reply and Sites-hosted execution have not yet been verified; this is an experimental integration, not a confirmed end-to-end voice release.
+
 
 ## Verification and limitations
 

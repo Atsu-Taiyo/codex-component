@@ -21,6 +21,8 @@ namespace CodexComponent
     [Serializable] public class Model { public string id; public string model; public string displayName; }
     [Serializable] public class ConnectionStatus { public bool loggedIn; public bool experimental; }
     [Serializable] public class ChatEvent { public string type; public string text; public string threadId; public string turnId; public GeneratedImage image; public ChatResult result; public string error; }
+    [Serializable] public class VoiceOptions { public string threadId; public string model; public string voice; public string prompt; }
+    [Serializable] public class VoiceSession { public string threadId; }
     [Serializable] class Envelope { public int id; public string kind; public string json; }
     [Serializable] class ErrorMessage { public string message; }
     [Serializable] class StringValue { public string value; }
@@ -29,26 +31,53 @@ namespace CodexComponent
     /// <summary>Call all methods from Unity's main thread. Tokens are runtime-only.</summary>
     public sealed class CodexClient : MonoBehaviour
     {
+        public event Action<string> VoiceEvent; // Raw JSON: connection state, transcript and provider events.
+        public static bool VoiceSupported { get {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return true;
+#else
+            return false;
+#endif
+        } }
         string baseUrl, token;
         int sequence;
+        int voiceRequestId;
         CodexRelay relay;
         readonly Dictionary<int, TaskCompletionSource<string>> pending = new Dictionary<int, TaskCompletionSource<string>>();
         readonly Dictionary<int, UnityWebRequest> native = new Dictionary<int, UnityWebRequest>();
         readonly Dictionary<int, Action<ChatEvent>> callbacks = new Dictionary<int, Action<ChatEvent>>();
 #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")] static extern void Codex_Request(string target, int id, string url, string token, string route, string body);
+        [DllImport("__Internal")] static extern void Codex_StopVoice(string target);
         [DllImport("__Internal")] static extern void Codex_Cancel(string target, int id);
 #endif
         public void Configure(string localToken, string url = "http://127.0.0.1:8787/api/ai") {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Host != "localhost" && uri.Host != "127.0.0.1") || (uri.Scheme != "http" && uri.Scheme != "https") || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0) throw new ArgumentException("Expected localhost or 127.0.0.1 URL");
             if (string.IsNullOrWhiteSpace(localToken)) throw new ArgumentException("Pairing token is required");
             CancelAll(); baseUrl = url.TrimEnd('/'); token = localToken;
-            if (relay == null) { var go = new GameObject("Codex-" + Guid.NewGuid().ToString("N")); go.transform.SetParent(transform); relay = go.AddComponent<CodexRelay>(); relay.receive = Receive; }
+            if (relay == null) { var go = new GameObject("Codex-" + Guid.NewGuid().ToString("N")); go.transform.SetParent(transform); relay = go.AddComponent<CodexRelay>(); relay.receive = Receive; relay.voice = message => { try { VoiceEvent?.Invoke(message); } catch (Exception error) { Debug.LogException(error); } }; }
         }
         public async Task<ConnectionStatus> StatusAsync() => JsonUtility.FromJson<ConnectionStatus>(await Request("/status", null));
         public async Task<Model[]> ModelsAsync() => JsonUtility.FromJson<ModelList>("{\"models\":" + await Request("/models", null) + "}").models;
         public async Task<ChatResult> ChatAsync(ChatInput input, Action<ChatEvent> onEvent = null) => JsonUtility.FromJson<ChatResult>(await Request("/chat", SerializeInput(input), onEvent));
         public async Task<ChatResult> GenerateImageAsync(ChatInput input, Action<ChatEvent> onEvent = null) => JsonUtility.FromJson<ChatResult>(await Request("/images", SerializeInput(input), onEvent));
+        /// <summary>Call directly from a user button. Completes after SDP negotiation, not after first audio.</summary>
+        public async Task<VoiceSession> StartVoiceAsync(VoiceOptions options = null) {
+            if (!VoiceSupported) throw new PlatformNotSupportedException("Realtime voice currently requires a Unity Web build; Editor/desktop are not supported.");
+            if (pending.ContainsKey(voiceRequestId)) throw new InvalidOperationException("Voice is already starting");
+            return JsonUtility.FromJson<VoiceSession>(await Request("/unity/voice/start", JsonUtility.ToJson(options ?? new VoiceOptions())));
+        }
+        public async Task StopVoiceAsync() {
+            if (!VoiceSupported) return;
+            var stop = Request("/unity/voice/stop", "{}");
+            if (pending.TryGetValue(voiceRequestId, out var start)) {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                Codex_Cancel(relay.gameObject.name, voiceRequestId);
+#endif
+                pending.Remove(voiceRequestId); callbacks.Remove(voiceRequestId); start.TrySetCanceled();
+            }
+            await stop;
+        }
         static string Quote(string value) { var json = JsonUtility.ToJson(new StringValue { value = value }); return json.Substring(9, json.Length - 10); }
         static string SerializeInput(ChatInput input) {
             if (input == null || string.IsNullOrWhiteSpace(input.prompt)) throw new ArgumentException("Prompt is required");
@@ -60,8 +89,10 @@ namespace CodexComponent
             return json + "}";
         }
         Task<string> Request(string route, string body, Action<ChatEvent> callback = null) {
+            if (!isActiveAndEnabled) throw new InvalidOperationException("CodexClient must be active and enabled");
             if (relay == null || string.IsNullOrEmpty(token)) throw new InvalidOperationException("Call Configure first");
             var id = ++sequence; var completion = new TaskCompletionSource<string>(); pending.Add(id, completion); callbacks[id] = callback;
+            if (route == "/unity/voice/start") voiceRequestId = id;
 #if UNITY_WEBGL && !UNITY_EDITOR
             Codex_Request(relay.gameObject.name, id, baseUrl, token, route, body ?? "");
 #else
@@ -106,6 +137,9 @@ namespace CodexComponent
             if (error == null) completion.TrySetResult(result); else completion.TrySetException(error);
         }
         public void CancelAll() {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (relay != null) Codex_StopVoice(relay.gameObject.name);
+#endif
             foreach (var id in new List<int>(pending.Keys)) {
 #if UNITY_WEBGL && !UNITY_EDITOR
                 Codex_Cancel(relay.gameObject.name, id);
