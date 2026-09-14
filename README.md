@@ -297,3 +297,7 @@ https://github.com/Atsu-Taiyo/codex-component.git?path=/unity/com.atsutaiyo.code
 ```
 
 導入・C#サンプル・接続手順は **[Unityガイド](docs/unity.md)** を参照してください。Unity Web版は実験的な音声APIにも対応します。Editorでのコンパイルと通信処理の自動テストは確認済みですが、WebGLビルドとSites公開ページでの接続は未検証です。
+
+## 小さなUnityゲームで試す
+
+**[ことばの宝箱](examples/treasure-unity/README.md)** — お題に合う宝物を考え、AIが判定・画像生成。3つ集めたらクリアです。Voiceで案内役に相談でき、AI接続なしの練習モードもあります。
